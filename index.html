@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Trainer Kelistrikan Kendaraan</title>
+
+    <style>
+        /* === GENERAL STYLING === */
+        body {
+            font-family: sans-serif;
+            background-color: #000;
+            color: lime;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* === HEADER & TOOLBAR === */
+        .header-title {
+            text-align: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: lime;
+        }
+
+        .header-title h2 {
+            margin: 5px 0;
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+
+        .header-title p {
+            margin: 0;
+            font-style: normal;
+            color: lime;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            padding: 10px;
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            width: 95vw;
+            align-items: flex-start;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .toolbar-group {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .toolbar-group h3 {
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            font-size: 1em;
+            color: lime;
+            border-bottom: 2px solid #333;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .toolbar button {
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid lime;
+            background-color: #222;
+            color: lime;
+            border-radius: 5px;
+        }
+
+        .toolbar button:hover {
+            background-color: #333;
+        }
+
+        #reset-button {
+            background-color: #a7342d;
+            color: lime;
+            border-color: #a7342d;
+        }
+
+        #reset-button:hover {
+            background-color: #c13e36;
+        }
+
+        /* === WORKBENCH & WIRING === */
+        #workbench-container {
+            width: 95vw;
+            flex-grow: 1;
+            overflow: auto;
+            border: 2px solid lime;
+            resize: both;
+        }
+
+        #workbench {
+            position: relative;
+            width: 1500px;
+            height: 1000px;
+            background-color: #000;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 0, 0.08) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: inset 0 0 10px #000;
+            transform-origin: top left;
+        }
+
+        #wire-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            fill: none;
+        }
+
+        .wire {
+            cursor: pointer;
+            transition: stroke-width 0.2s ease-in-out;
+            pointer-events: stroke;
+        }
+
+        .wire:hover {
+            stroke-width: 6;
+        }
+
+        .wire-handle {
+            fill: rgba(0, 255, 0, 0.6);
+            stroke: lime;
+            stroke-width: 1;
+            cursor: move;
+            pointer-events: all;
+            transition: r 0.2s;
+        }
+
+        .wire-handle:hover {
+            r: 8;
+        }
+        
+        /* === COMPONENT STYLES === */
+        .component {
+            position: absolute;
+            min-width: 100px;
+            min-height: 60px;
+            background-color: #1a1a1a;
+            border: 1px solid lime;
+            border-radius: 8px;
+            padding: 25px 10px 10px;
+            text-align: center;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            cursor: grab;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        .component.dragging {
+            cursor: grabbing;
+            opacity: 0.8;
+            z-index: 1000;
+        }
+
+        .component p {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            margin: 0;
+            font-weight: bold;
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: lime;
+            border: 1px solid #000;
+            right: -6px;
+            bottom: -6px;
+            cursor: nwse-resize;
+            z-index: 10;
+        }
+
+        .terminal {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #333;
+            border: 2px solid lime;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terminal:hover {
+            transform: scale(1.2);
+            background-color: #444;
+        }
+
+        .terminal.positive {
+            border-color: #ff4136;
+        }
+
+        .terminal.negative {
+            border-color: #FFFFFF;
+        }
+
+        .terminal span {
+            font-size: 10px;
+            color: lime;
+            pointer-events: none;
+        }
+
+        /* Specific Component Terminal Positions */
+        .accu .positive { top: 20px; right: -10px; }
+        .accu .negative { bottom: 20px; right: -10px; }
+        .fuse .terminal, .switch .terminal, .horn-button .terminal, .flasher .terminal { top: 50%; transform: translateY(-50%); }
+        .fuse .terminal:nth-of-type(1), .switch .terminal:nth-of-type(1), .horn-button .terminal:nth-of-type(1), .flasher .terminal:nth-of-type(1) { left: -10px; }
+        .fuse .terminal:nth-of-type(2), .switch .terminal:nth-of-type(2), .horn-button .terminal:nth-of-type(2), .flasher .terminal:nth-of-type(2) { right: -10px; }
+        .switch, .horn-button { cursor: pointer; background-color: #a7342d; transition: background-color 0.3s; }
+        .switch[data-state="on"], .horn-button[data-state="on"] { background-color: #2da84a; }
+
+        .relay { transition: border-color 0.3s; min-height: 100px; }
+        .relay[data-state="on"] { border-color: #ffd700; }
+        .relay .terminal.coil-pos { top: 25%; left: -10px; transform: translateY(-50%); }
+        .relay .terminal.coil-neg { top: 75%; left: -10px; transform: translateY(-50%); }
+        .relay .terminal.common { top: 50%; right: -10px; transform: translateY(-50%); }
+        .relay .terminal.switch-no { top: 25%; right: -10px; transform: translateY(-50%); }
+        .relay .terminal.switch-nc { top: 75%; right: -10px; transform: translateY(-50%); }
+
+        .lamp .lamp-display, .turn-signal-lamp .lamp-display, .horn .lamp-display { width: 60px; height: 60px; margin: 5px auto; background-color: #000; color: lime; border: 2px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1em; transition: background-color 0.3s, color 0.3s; pointer-events: none; }
+        .lamp .terminal:nth-of-type(1), .turn-signal-lamp .terminal:nth-of-type(1), .horn .terminal:nth-of-type(1) { top: 50%; left: -10px; transform: translateY(-50%); }
+        .lamp .terminal:nth-of-type(2), .turn-signal-lamp .terminal:nth-of-type(2), .horn .terminal:nth-of-type(2) { top: 50%; right: -10px; transform: translateY(-50%); }
+        .turn-signal-lamp .lamp-display { border-color: orange; }
+        
+        .terminal-block { min-width: 60px; min-height: 100px; }
+        .terminal-block .terminal:nth-of-type(1) { top: 25%; left: 50%; transform: translateX(-50%); }
+        .terminal-block .terminal:nth-of-type(2) { top: 75%; left: 50%; transform: translateX(-50%); }
+        .terminal-block-h { min-width: 100px; min-height: 60px; }
+        .terminal-block-h .terminal { top: 50%; transform: translateY(-50%); }
+        .terminal-block-h .terminal:nth-of-type(1) { left: 25%; }
+        .terminal-block-h .terminal:nth-of-type(2) { left: 75%; }
+
+        .ground { min-width: 40px; min-height: 40px; background-color: transparent; border: none; box-shadow: none; }
+        .ground .ground-symbol { width: 100%; height: 100%; position: relative; }
+        .ground .ground-symbol::before { content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 2px; height: 15px; background: lime; }
+        .ground .ground-symbol::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 2px; background: lime; box-shadow: 0 4px 0 0 lime, 0 8px 0 0 lime; }
+        .ground .terminal { top: 0; left: 50%; transform: translateX(-50%); }
+
+        .ignition-switch { min-width: 100px; min-height: 100px; border-radius: 50%; cursor: pointer; }
+        .ignition-switch .terminal { width: 12px; height: 12px; }
+        .ignition-switch .terminal.ign_in { top: 50%; left: -8px; transform: translateY(-50%); }
+        .ignition-switch .terminal.acc_out { top: 20%; right: -8px; transform: translateY(-50%); }
+        .ignition-switch .terminal.ign_out { top: 80%; right: -8px; transform: translateY(-50%); }
+        
+        .horn { min-height: 60px; }
+
+        .turn-signal-switch { min-width: 140px; min-height: 50px; cursor: pointer; }
+        .turn-signal-switch .terminal { top: 50%; transform: translateY(-50%); }
+        .turn-signal-switch .terminal.input { left: 50%; transform: translateX(-50%); top: -10px; }
+        .turn-signal-switch .terminal.left_out { left: -10px; }
+        .turn-signal-switch .terminal.right_out { right: -10px; }
+
+        /* === SWITCH ANIMATION STYLES === */
+        .switch-graphic-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 4;
+        }
+
+        .switch-pivot-point, .switch-contact-point {
+            position: absolute; width: 8px; height: 8px; background-color: #000;
+            border: 2px solid #555; border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .switch-arm {
+            position: absolute; height: 3px; background-color: #ff4136; /* Warna OFF */
+            transform-origin: 0% 50%;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            border-radius: 2px; transform: rotate(var(--off-angle, -30deg));
+        }
+
+        /* State-based animations */
+        .component[data-state="on"] .switch-arm { transform: rotate(var(--on-angle, 0deg)); background-color: lime; }
+        
+        /* Relay specific animations */
+        .relay .switch-arm.nc-arm { transform: rotate(var(--on-angle, 0deg)); background-color: lime; }
+        .relay[data-state="on"] .switch-arm.nc-arm { transform: rotate(var(--off-angle, -30deg)); background-color: #ff4136; }
+        .relay .switch-arm.no-arm { transform: rotate(var(--off-angle, -30deg)); background-color: #ff4136; }
+        .relay[data-state="on"] .switch-arm.no-arm { transform: rotate(var(--on-angle, 0deg)); background-color: lime; }
+        
+        /* Turn signal switch specific animations */
+        .turn-signal-switch .switch-arm { transform: rotate(var(--off-angle)); }
+        .turn-signal-switch[data-position="left"] .switch-arm.left-arm { transform: rotate(var(--on-angle)); background-color: lime; }
+        .turn-signal-switch[data-position="right"] .switch-arm.right-arm { transform: rotate(var(--on-angle)); background-color: lime; }
+
+		/* === RESPONSIVE STYLES === */
+        @media (max-width: 768px) {
+            body { padding: 5px; }
+            .header-title h1 { font-size: 1.1em; }
+            .header-title h2 { font-size: 0.9em; }
+            .toolbar { width: 100%; }
+            .toolbar-group h3 { font-size: 0.9em; }
+            .toolbar button { font-size: 11px; padding: 6px 8px; }
+            #workbench-container { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-title">
+        <h1>TRAINER KELISTRIKAN OTOMOTIF</h1>
+        <h2>SMK GAJAH MADA BANYUWANGI</h2>
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <h3>KOMPONEN DASAR</h3>
+            <div class="button-container">
+                <button class="add-component" data-type="accu">ACCU</button>
+                <button class="add-component" data-type="ground">GROUND</button>
+                <button class="add-component" data-type="terminal-block">TERMINAL (V)</button>
+                <button class="add-component" data-type="terminal-block-h">TERMINAL (H)</button>
+                <button class="add-component" data-type="fuse">FUSE</button>
+            </div>
+        </div>
+        <div class="toolbar-group">
+            <h3>LAMPU & KLAKSON</h3>
+            <div class="button-container">
+                <button class="add-component" data-type="lamp">LAMPU</button>
+                <button class="add-component" data-type="horn">KLAKSON</button>
+            </div>
+        </div>
+        <div class="toolbar-group">
+            <h3>SAKLAR & KONTROL</h3>
+            <div class="button-container">
+                <button class="add-component" data-type="ignition-switch">KUNCI KONTAK</button>
+                <button class="add-component" data-type="switch">SAKLAR TUNGGAL</button>
+                <button class="add-component" data-type="turn-signal-switch">SAKLAR GANDA</button>
+                <button class="add-component" data-type="horn-button">TOMBOL KLAKSON</button>
+                <button class="add-component" data-type="relay">RELAY</button>
+                <button class="add-component" data-type="flasher">FLASHER</button>
+            </div>
+        </div>
+        <div class="toolbar-group actions">
+            <h3>AKSI</h3>
+            <div class="button-container">
+                <button id="reset-button">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="workbench-container">
+        <div id="workbench">
+            <svg id="wire-canvas"></svg>
+        </div>
+    </div>
+
+    <audio id="horn-sound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_c3b5368a5c.mp3" preload="auto"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- INITIAL SETUP & GLOBAL STATE ---
+            document.addEventListener('contextmenu', e => e.preventDefault());
+
+            let workbench = document.getElementById('workbench');
+            let wireCanvas = document.getElementById('wire-canvas');
+            let hornSound = document.getElementById('horn-sound');
+
+            const SVG_NS = "http://www.w3.org/2000/svg";
+
+            let state = {
+                components: {},
+                connections: [],
+                componentCounter: 0,
+                drawingState: {
+                    isDrawing: false,
+                    startTerminal: null,
+                    previewLine: null,
+                    currentPathPoints: []
+                },
+                flasherState: {
+                    intervalId: null,
+                    isOn: false
+                },
+                activeWireState: {
+                    connection: null,
+                    handles: [],
+                    draggingHandleIndex: -1
+                }
+            };
+
+            // --- UTILITY FUNCTIONS ---
+            function normalizeEventCoords(e) { if (e.touches && e.touches.length > 0) { return e.touches[0]; } return e; }
+            function getMousePos(e) { const benchRect = workbench.getBoundingClientRect(); const coords = normalizeEventCoords(e); return { x: coords.clientX - benchRect.left, y: coords.clientY - benchRect.top }; }
+            function getTerminalCoords(terminalEl) { const termRect = terminalEl.getBoundingClientRect(); const benchRect = workbench.getBoundingClientRect(); return { x: termRect.left - benchRect.left + termRect.width / 2, y: termRect.top - benchRect.top + termRect.height / 2 }; }
+            function generateSegmentedPath(points) { if (points.length < 1) return ""; const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`); return pathData.join(' '); }
+
+            // --- COMPONENT VISUALS & ANIMATION ---
+            function createSwitchVisuals(componentEl, pivotTermId, contactTermId, cssClass = '', offAngleDirection = 1) {
+                const pivotTerminal = componentEl.querySelector(`[data-terminal-id="${pivotTermId}"]`);
+                const contactTerminal = componentEl.querySelector(`[data-terminal-id="${contactTermId}"]`);
+                if (!pivotTerminal || !contactTerminal) return;
+
+                const pivotPos = { x: pivotTerminal.offsetLeft + pivotTerminal.offsetWidth / 2, y: pivotTerminal.offsetTop + pivotTerminal.offsetHeight / 2 };
+                const contactPos = { x: contactTerminal.offsetLeft + contactTerminal.offsetWidth / 2, y: contactTerminal.offsetTop + contactTerminal.offsetHeight / 2 };
+                const dx = contactPos.x - pivotPos.x;
+                const dy = contactPos.y - pivotPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const onAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                const offAngle = onAngle - (30 * offAngleDirection);
+
+                let container = componentEl.querySelector('.switch-graphic-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'switch-graphic-container';
+                    componentEl.appendChild(container);
+                }
+
+                const pivotCircle = document.createElement('div');
+                pivotCircle.className = 'switch-pivot-point';
+                pivotCircle.style.left = `${pivotPos.x}px`;
+                pivotCircle.style.top = `${pivotPos.y}px`;
+
+                const contactCircle = document.createElement('div');
+                contactCircle.className = 'switch-contact-point';
+                contactCircle.style.left = `${contactPos.x}px`;
+                contactCircle.style.top = `${contactPos.y}px`;
+
+                const arm = document.createElement('div');
+                arm.className = `switch-arm ${cssClass}`;
+                arm.style.left = `${pivotPos.x}px`;
+                arm.style.top = `${pivotPos.y - 1.5}px`;
+                arm.style.width = `${distance - 5}px`;
+                arm.style.setProperty('--on-angle', `${onAngle}deg`);
+                arm.style.setProperty('--off-angle', `${offAngle}deg`);
+                
+                container.appendChild(pivotCircle);
+                container.appendChild(contactCircle);
+                container.appendChild(arm);
+            }
+
+            function updateAnimationsForComponent(componentId) {
+                const component = state.components[componentId];
+                if (!component) return;
+
+                const oldContainer = component.el.querySelector('.switch-graphic-container');
+                if (oldContainer) oldContainer.remove();
+
+                const type = component.type;
+                switch (type) {
+                    case 'switch':
+                    case 'horn-button':
+                    case 'flasher':
+                        createSwitchVisuals(component.el, 'in', 'out');
+                        break;
+                    case 'relay':
+                        createSwitchVisuals(component.el, '30', '87', 'no-arm', 1);
+                        createSwitchVisuals(component.el, '30', '87a', 'nc-arm', -1);
+                        break;
+                    case 'turn-signal-switch':
+                        createSwitchVisuals(component.el, 'in', 'left', 'left-arm', -1);
+                        createSwitchVisuals(component.el, 'in', 'right', 'right-arm', 1);
+                        break;
+                }
+            }
+
+            // --- COMPONENT CREATION & MANAGEMENT ---
+            function createComponent(type) {
+                state.componentCounter++;
+                const id = `${type}-${state.componentCounter}`;
+                const componentEl = document.createElement('div');
+                componentEl.id = id;
+                componentEl.className = `component ${type}`;
+                componentEl.style.left = `${(state.componentCounter * 10) % 200 + 20}px`;
+                componentEl.style.top = `${Math.floor(state.componentCounter / 10) * 120 + 20}px`;
+
+                let terminalsHTML = '';
+                let componentContent = `<p>${type.replace(/-/g, ' ').toUpperCase()}</p>`;
+
+                switch (type) {
+                    case 'accu': terminalsHTML = `<div class="terminal positive" data-terminal-id="pos"></div><div class="terminal negative" data-terminal-id="neg"></div>`; break;
+                    case 'ground': componentContent = '<div class="ground-symbol"></div>'; terminalsHTML = `<div class="terminal" data-terminal-id="gnd"></div>`; break;
+                    case 'lamp': componentContent = `<p>LAMPU</p><div class="lamp-display">OFF</div>`; terminalsHTML = `<div class="terminal" data-terminal-id="pos"></div><div class="terminal" data-terminal-id="neg"></div>`; break;
+                    case 'horn': componentContent = `<p>KLAKSON</p><div class="lamp-display">OFF</div>`; terminalsHTML = `<div class="terminal" data-terminal-id="pos"></div><div class="terminal" data-terminal-id="neg"></div>`; break;
+                    case 'turn-signal-lamp': componentContent = `<p>Lampu Sein</p><div class="lamp-display">OFF</div>`; terminalsHTML = `<div class="terminal" data-terminal-id="pos"></div><div class="terminal" data-terminal-id="neg"></div>`; break;
+                    case 'fuse': terminalsHTML = `<div class="terminal" data-terminal-id="in"></div><div class="terminal" data-terminal-id="out"></div>`; break;
+                    case 'flasher': componentEl.dataset.state = 'off'; terminalsHTML = `<div class="terminal" data-terminal-id="in"></div><div class="terminal" data-terminal-id="out"></div>`; break;
+                    case 'switch': componentEl.dataset.state = 'off'; terminalsHTML = `<div class="terminal" data-terminal-id="in"></div><div class="terminal" data-terminal-id="out"></div>`; break;
+                    case 'horn-button': componentEl.dataset.state = 'off'; terminalsHTML = `<div class="terminal" data-terminal-id="in"></div><div class="terminal" data-terminal-id="out"></div>`; break;
+                    case 'relay': componentEl.dataset.state = 'off'; componentContent = `<p>RELAY (OFF)</p>`; terminalsHTML = `<div class="terminal coil-pos" data-terminal-id="86"><span>86</span></div><div class="terminal coil-neg" data-terminal-id="85"><span>85</span></div><div class="terminal common" data-terminal-id="30"><span>30</span></div><div class="terminal switch-no" data-terminal-id="87"><span>87</span></div><div class="terminal switch-nc" data-terminal-id="87a"><span>87a</span></div>`; break;
+                    case 'terminal-block': case 'terminal-block-h': terminalsHTML = `<div class="terminal" data-terminal-id="t1"></div><div class="terminal" data-terminal-id="t2"></div>`; break;
+                    case 'ignition-switch': componentEl.dataset.state = 'off'; componentContent = `<p>KUNCI KONTAK (OFF)</p>`; terminalsHTML = `<div class="terminal ign_in" data-terminal-id="in"></div><div class="terminal acc_out" data-terminal-id="acc"></div><div class="terminal ign_out" data-terminal-id="ign"></div>`; break;
+                    case 'turn-signal-switch': componentEl.dataset.position = 'neutral'; componentContent = `<p>SAKLAR GANDA (N)</p>`; terminalsHTML = `<div class="terminal input" data-terminal-id="in"></div><div class="terminal left_out" data-terminal-id="left"><span>1</span></div><div class="terminal right_out" data-terminal-id="right"><span>2</span></div>`; break;
+                }
+                componentEl.innerHTML = componentContent + terminalsHTML + `<div class="resize-handle"></div>`;
+                workbench.appendChild(componentEl);
+                state.components[id] = { el: componentEl, type: type };
+                
+                updateAnimationsForComponent(id);
+                makeDraggable(componentEl);
+                makeResizable(componentEl);
+                addTerminalListeners(componentEl);
+                
+                // Add specific event listeners
+                componentEl.addEventListener('click', (e) => { if (e.shiftKey) { e.stopPropagation(); deleteComponent(e); } });
+                if (type === 'switch') { componentEl.addEventListener('click', (e) => { if (e.target.classList.contains('terminal') || e.shiftKey) return; componentEl.dataset.state = componentEl.dataset.state === 'off' ? 'on' : 'off'; checkAllCircuits(); }); }
+                if (type === 'horn-button') { const toggleHornButton = (newState) => { componentEl.dataset.state = newState; checkAllCircuits(); }; componentEl.addEventListener('mousedown', () => toggleHornButton('on')); componentEl.addEventListener('mouseup', () => toggleHornButton('off')); componentEl.addEventListener('mouseleave', () => toggleHornButton('off')); componentEl.addEventListener('touchstart', (e) => { e.preventDefault(); toggleHornButton('on'); }); componentEl.addEventListener('touchend', () => toggleHornButton('off')); }
+                if (type === 'ignition-switch') { componentEl.addEventListener('click', (e) => { if (e.target.classList.contains('terminal') || e.shiftKey) return; const states = ['off', 'acc', 'on']; const currentIndex = states.indexOf(componentEl.dataset.state); const nextState = states[(currentIndex + 1) % states.length]; componentEl.dataset.state = nextState; componentEl.querySelector('p').textContent = `KUNCI KONTAK (${nextState.toUpperCase()})`; checkAllCircuits(); }); }
+                if (type === 'turn-signal-switch') { componentEl.addEventListener('click', (e) => { if (e.target.classList.contains('terminal') || e.shiftKey) return; const positions = ['neutral', 'left', 'right']; const displayMap = { 'neutral': 'N', 'left': '1', 'right': '2' }; const currentIndex = positions.indexOf(componentEl.dataset.position); const nextPosition = positions[(currentIndex + 1) % positions.length]; componentEl.dataset.position = nextPosition; componentEl.querySelector('p').textContent = `SAKLAR GANDA (${displayMap[nextPosition]})`; checkAllCircuits(); }); }
+            }
+
+            function deleteComponent(e) { const componentEl = e.currentTarget; if (confirm(`Hapus komponen ${componentEl.id}?`)) { state.connections = state.connections.filter(c => { if (c.from.compId === componentEl.id || c.to.compId === componentEl.id) { c.wireEl.remove(); return false; } return true; }); delete state.components[componentEl.id]; componentEl.remove(); checkAllCircuits(); } }
+            
+            function makeDraggable(element) { let offsetX, offsetY; const onStart = (e) => { if (e.target.classList.contains('terminal') || e.target.classList.contains('resize-handle')) return; e.preventDefault(); const coords = normalizeEventCoords(e); element.classList.add('dragging'); offsetX = coords.clientX - element.offsetLeft; offsetY = coords.clientY - element.offsetTop; document.addEventListener('mousemove', onMove); document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('mouseup', onEnd, { once: true }); document.addEventListener('touchend', onEnd, { once: true }); }; const onMove = (e) => { e.preventDefault(); const coords = normalizeEventCoords(e); element.style.left = `${coords.clientX - offsetX}px`; element.style.top = `${coords.clientY - offsetY}px`; updateWiresForComponent(element.id); }; const onEnd = () => { element.classList.remove('dragging'); document.removeEventListener('mousemove', onMove); document.removeEventListener('touchmove', onMove); }; element.addEventListener('mousedown', onStart); element.addEventListener('touchstart', onStart, { passive: false }); }
+            
+            function makeResizable(element) { const handle = element.querySelector('.resize-handle'); const onMouseDown = (e) => { e.stopPropagation(); e.preventDefault(); const coords = normalizeEventCoords(e); let startX = coords.clientX; let startY = coords.clientY; let startWidth = parseInt(getComputedStyle(element).width); let startHeight = parseInt(getComputedStyle(element).height); const onMouseMove = (moveEvent) => { const moveCoords = normalizeEventCoords(moveEvent); element.style.width = `${startWidth + moveCoords.clientX - startX}px`; element.style.height = `${startHeight + moveCoords.clientY - startY}px`; updateWiresForComponent(element.id); updateAnimationsForComponent(element.id); }; const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('touchmove', onMouseMove); }; document.addEventListener('mousemove', onMouseMove); document.addEventListener('touchmove', onMouseMove, { passive: false }); document.addEventListener('mouseup', onMouseUp, { once: true }); document.addEventListener('touchend', onMouseUp, { once: true }); }; handle.addEventListener('mousedown', onMouseDown); handle.addEventListener('touchstart', onMouseDown, { passive: false }); }
+            
+            // --- WIRING & DRAWING LOGIC ---
+            function addTerminalListeners(componentEl) { componentEl.querySelectorAll('.terminal').forEach(t => t.addEventListener('click', onTerminalClick)); }
+            
+            function onTerminalClick(e) { e.stopPropagation(); e.preventDefault(); const terminal = e.currentTarget; const ds = state.drawingState; if (!ds.isDrawing) { ds.isDrawing = true; ds.startTerminal = terminal; ds.currentPathPoints = []; ds.previewLine = document.createElementNS(SVG_NS, 'path'); ds.previewLine.setAttribute('stroke', 'lime'); ds.previewLine.setAttribute('stroke-width', '3'); ds.previewLine.setAttribute('stroke-dasharray', '5,5'); wireCanvas.appendChild(ds.previewLine); workbench.addEventListener('mousemove', onPreviewMouseMove); workbench.addEventListener('click', onWorkbenchClick, true); document.addEventListener('keydown', onCancelDrawingKey); } else { const startCompId = ds.startTerminal.closest('.component').id; const endCompId = terminal.closest('.component').id; if (startCompId === endCompId && ds.startTerminal.dataset.terminalId === terminal.dataset.terminalId) { cancelDrawing(); return; } createWire(ds.startTerminal, terminal, ds.currentPathPoints); cancelDrawing(); checkAllCircuits(); } }
+            
+            function createWire(startTerminal, endTerminal, anchorPoints) { const wire = document.createElementNS(SVG_NS, 'path'); wire.setAttribute('stroke-width', '4'); wire.setAttribute('stroke-linecap', 'round'); wire.classList.add('wire'); const connection = { from: { compId: startTerminal.closest('.component').id, termId: startTerminal.dataset.terminalId }, to: { compId: endTerminal.closest('.component').id, termId: endTerminal.dataset.terminalId }, anchorPoints: [...anchorPoints], wireEl: wire }; wire.addEventListener('click', (e) => { if (e.shiftKey) { e.preventDefault(); if (confirm('Hapus kabel ini?')) { hideWireHandles(); state.connections = state.connections.filter(c => c !== connection); wire.remove(); checkAllCircuits(); } } }); wire.addEventListener('mouseover', () => showWireHandles(connection)); wire.addEventListener('mouseout', () => hideWireHandles()); wire.addEventListener('mousedown', (e) => onWireMouseDown(e, connection)); state.connections.push(connection); wireCanvas.appendChild(wire); updateWirePosition(connection); return connection; }
+            
+            function onWorkbenchClick(e) { const ds = state.drawingState; if (!ds.isDrawing || e.target.classList.contains('terminal')) return; e.stopPropagation(); e.preventDefault(); ds.currentPathPoints.push(getMousePos(e)); }
+            
+            function onPreviewMouseMove(e) { e.preventDefault(); const ds = state.drawingState; if (!ds.isDrawing) return; const startCoords = getTerminalCoords(ds.startTerminal); const points = [startCoords, ...ds.currentPathPoints, getMousePos(e)]; ds.previewLine.setAttribute('d', generateSegmentedPath(points)); }
+            
+            function onCancelDrawingKey(e) { if (e.key === 'Escape') { cancelDrawing(); } }
+            
+            function cancelDrawing() { const ds = state.drawingState; if (!ds.isDrawing) return; workbench.removeEventListener('mousemove', onPreviewMouseMove); workbench.removeEventListener('click', onWorkbenchClick, true); document.removeEventListener('keydown', onCancelDrawingKey); if (ds.previewLine) { ds.previewLine.remove(); } Object.assign(ds, { isDrawing: false, startTerminal: null, previewLine: null, currentPathPoints: [] }); }
+            
+            function updateWirePosition(connection) { const startComp = document.getElementById(connection.from.compId); const endComp = document.getElementById(connection.to.compId); if (!startComp || !endComp) return; const startTerm = startComp.querySelector(`[data-terminal-id="${connection.from.termId}"]`); const endTerm = endComp.querySelector(`[data-terminal-id="${connection.to.termId}"]`); if (!startTerm || !endTerm) return; const startCoords = getTerminalCoords(startTerm); const endCoords = getTerminalCoords(endTerm); const points = [startCoords, ...connection.anchorPoints, endCoords]; connection.wireEl.setAttribute('d', generateSegmentedPath(points)); if (state.activeWireState.connection === connection) { showWireHandles(connection); } }
+            
+            function updateWiresForComponent(componentId) { state.connections.forEach(conn => { if (conn.from.compId === componentId || conn.to.compId === componentId) { updateWirePosition(conn); } }); }
+            
+            function showWireHandles(connection) { hideWireHandles(); state.activeWireState.connection = connection; connection.anchorPoints.forEach((point, index) => { const handle = document.createElementNS(SVG_NS, 'circle'); handle.setAttribute('class', 'wire-handle'); handle.setAttribute('cx', point.x); handle.setAttribute('cy', point.y); handle.setAttribute('r', '6'); handle.addEventListener('mousedown', (e) => onHandleMouseDown(e, index)); handle.addEventListener('click', (e) => { if (e.shiftKey) { e.preventDefault(); e.stopPropagation(); connection.anchorPoints.splice(index, 1); updateWirePosition(connection); } }); handle.addEventListener('mouseover', (e) => e.stopPropagation()); wireCanvas.appendChild(handle); state.activeWireState.handles.push(handle); }); }
+            
+            function hideWireHandles() { state.activeWireState.handles.forEach(h => h.remove()); state.activeWireState.handles = []; state.activeWireState.connection = null; }
+            
+            function onHandleMouseDown(e, index) { if (e.shiftKey) { e.stopPropagation(); return; } e.stopPropagation(); state.activeWireState.draggingHandleIndex = index; document.addEventListener('mousemove', onHandleDrag); document.addEventListener('mouseup', onHandleDragEnd, { once: true }); }
+            
+            function onHandleDrag(e) { if (state.activeWireState.draggingHandleIndex === -1) return; const pos = getMousePos(e); const conn = state.activeWireState.connection; const index = state.activeWireState.draggingHandleIndex; conn.anchorPoints[index] = pos; updateWirePosition(conn); }
+            
+            function onHandleDragEnd() { state.activeWireState.draggingHandleIndex = -1; document.removeEventListener('mousemove', onHandleDrag); }
+            
+            function onWireMouseDown(e, connection) { if (e.shiftKey || e.target.classList.contains('wire-handle')) return; e.stopPropagation(); const pos = getMousePos(e); const newAnchorIndex = getNewAnchorIndex(pos, connection); connection.anchorPoints.splice(newAnchorIndex, 0, pos); showWireHandles(connection); onHandleMouseDown(e, newAnchorIndex); }
+            
+            function getNewAnchorIndex(pos, connection) { const startComp = document.getElementById(connection.from.compId); const endComp = document.getElementById(connection.to.compId); if (!startComp || !endComp) return 0; const startTerm = startComp.querySelector(`[data-terminal-id="${connection.from.termId}"]`); const endTerm = endComp.querySelector(`[data-terminal-id="${connection.to.termId}"]`); if (!startTerm || !endTerm) return 0; const points = [getTerminalCoords(startTerm), ...connection.anchorPoints, getTerminalCoords(endTerm)]; let closestSegmentIndex = 0; let minDistance = Infinity; for (let i = 0; i < points.length - 1; i++) { const p1 = points[i]; const p2 = points[i + 1]; const midPoint = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }; const dist = Math.hypot(pos.x - midPoint.x, pos.y - midPoint.y); if (dist < minDistance) { minDistance = dist; closestSegmentIndex = i; } } return closestSegmentIndex + 1; }
+
+            // --- CIRCUIT SIMULATION LOGIC ---
+            function findPath(startNode, endNode, visited = new Set()) { const pathId = `${startNode.compId}-${startNode.termId}`; if (endNode.termId === 'gnd' && state.components[startNode.compId]?.type === 'ground') return true; if (pathId === `${endNode.compId}-${endNode.termId}`) return true; if (visited.has(pathId)) return false; visited.add(pathId); const nodesToVisit = []; const startComp = state.components[startNode.compId]; if (startComp) { const { type, el } = startComp; const stateIsOn = el.dataset.state === 'on'; if (type === 'fuse' || (type === 'switch' && stateIsOn) || (type === 'horn-button' && stateIsOn) ) { if (startNode.termId === 'in') nodesToVisit.push({ compId: startNode.compId, termId: 'out' }); if (startNode.termId === 'out') nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } if (type === 'ignition-switch') { const ignState = el.dataset.state; if (startNode.termId === 'in') { if (ignState === 'acc' || ignState === 'on') nodesToVisit.push({ compId: startNode.compId, termId: 'acc' }); if (ignState === 'on') nodesToVisit.push({ compId: startNode.compId, termId: 'ign' }); } else if (startNode.termId === 'acc' && (ignState === 'acc' || ignState === 'on')) { nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } else if (startNode.termId === 'ign' && ignState === 'on') { nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } } if (type === 'turn-signal-switch') { const pos = el.dataset.position; if (startNode.termId === 'in') { if (pos === 'left') nodesToVisit.push({ compId: startNode.compId, termId: 'left' }); if (pos === 'right') nodesToVisit.push({ compId: startNode.compId, termId: 'right' }); } else if (startNode.termId === 'left' && pos === 'left') { nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } else if (startNode.termId === 'right' && pos === 'right') { nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } } if (type === 'flasher' && state.flasherState.isOn) { if (startNode.termId === 'in') nodesToVisit.push({ compId: startNode.compId, termId: 'out' }); if (startNode.termId === 'out') nodesToVisit.push({ compId: startNode.compId, termId: 'in' }); } if (type === 'relay') { if (stateIsOn) { if (startNode.termId === '30') nodesToVisit.push({ compId: startNode.compId, termId: '87' }); if (startNode.termId === '87') nodesToVisit.push({ compId: startNode.compId, termId: '30' }); } else { if (startNode.termId === '30') nodesToVisit.push({ compId: startNode.compId, termId: '87a' }); if (startNode.termId === '87a') nodesToVisit.push({ compId: startNode.compId, termId: '30' }); } if (startNode.termId === '85') nodesToVisit.push({ compId: startNode.compId, termId: '86'}); if (startNode.termId === '86') nodesToVisit.push({ compId: startNode.compId, termId: '85'}); } if (type === 'terminal-block' || type === 'terminal-block-h') { ['t1', 't2'].forEach(t => { if (t !== startNode.termId) nodesToVisit.push({ compId: startNode.compId, termId: t }); }); } } state.connections.forEach(c => { if (c.from.compId === startNode.compId && c.from.termId === startNode.termId) nodesToVisit.push(c.to); if (c.to.compId === startNode.compId && c.to.termId === startNode.termId) nodesToVisit.push(c.from); }); for (const nextNode of nodesToVisit) { if (findPath(nextNode, endNode, new Set(visited))) return true; } return false; }
+            
+            function getTerminalPotential(node) { const accu = Object.values(state.components).find(c => c.type === 'accu'); if (!accu) return 'neutral'; const accuId = accu.el.id; if (findPath(node, { compId: accuId, termId: 'pos' })) return 'positive'; if (findPath(node, { compId: accuId, termId: 'neg' }) || findPath(node, { compId: 'any', termId: 'gnd' })) return 'negative'; return 'neutral'; }
+            
+            function manageFlasher(accuId) { const flasher = Object.values(state.components).find(c => c.type === 'flasher'); if (!flasher) { if (state.flasherState.intervalId) clearInterval(state.flasherState.intervalId); state.flasherState.intervalId = null; return; } const flasherHasPower = findPath({ compId: accuId, termId: 'pos' }, { compId: flasher.el.id, termId: 'in' }); if (flasherHasPower && !state.flasherState.intervalId) { state.flasherState.intervalId = setInterval(() => { state.flasherState.isOn = !state.flasherState.isOn; checkAllCircuits(); }, 500); } else if (!flasherHasPower && state.flasherState.intervalId) { clearInterval(state.flasherState.intervalId); state.flasherState.intervalId = null; state.flasherState.isOn = false; checkAllCircuits(); } }
+            
+            function updateComponentState(component, isOn) { const { type, el } = component; if (type === 'relay') { const newState = isOn ? 'on' : 'off'; if (el.dataset.state !== newState) { el.dataset.state = newState; } el.querySelector('p').textContent = `RELAY (${newState.toUpperCase()})`; } else if (['lamp', 'turn-signal-lamp', 'horn'].includes(type)) { const displayEl = el.querySelector('.lamp-display'); if (!displayEl) return; displayEl.textContent = isOn ? 'ON' : 'OFF'; let onColor; if (isOn) { if (type === 'horn') { onColor = '#ff4136'; } else if (type === 'turn-signal-lamp') { onColor = 'orange'; } else { onColor = '#ffd700'; } } else { onColor = '#000'; } displayEl.style.backgroundColor = onColor; displayEl.style.color = isOn ? '#000' : 'lime'; if (type === 'horn') { if (isOn && hornSound.paused) { hornSound.play().catch(e => console.error("Horn sound error:", e)); } else if (!isOn && !hornSound.paused) { hornSound.pause(); hornSound.currentTime = 0; } } } }
+            
+            function checkAllCircuits() { const accu = Object.values(state.components).find(c => c.type === 'accu'); if (!accu) { Object.values(state.components).forEach(comp => { if (comp.type === 'relay' || comp.type === 'flasher') { comp.el.dataset.state = 'off'; } updateComponentState(comp, false) }); state.connections.forEach(conn => conn.wireEl.setAttribute('stroke', '#888')); if (state.flasherState.intervalId) clearInterval(state.flasherState.intervalId); state.flasherState.intervalId = null; state.flasherState.isOn = false; return; } const accuId = accu.el.id; const groundNode = { compId: 'any', termId: 'gnd' }; manageFlasher(accuId); const flasherComp = Object.values(state.components).find(c => c.type === 'flasher'); if (flasherComp) { flasherComp.el.dataset.state = state.flasherState.isOn ? 'on' : 'off'; } Object.values(state.components).forEach(comp => { if (comp.type === 'relay') { const coilEnergized = findPath({ compId: accuId, termId: 'pos' }, { compId: comp.el.id, termId: '86' }) && findPath({ compId: comp.el.id, termId: '85' }, groundNode); updateComponentState(comp, coilEnergized); } }); Object.values(state.components).forEach(comp => { const compId = comp.el.id; switch (comp.type) { case 'lamp': case 'turn-signal-lamp': case 'horn': updateComponentState(comp, findPath({ compId: accuId, termId: 'pos' }, { compId: compId, termId: 'pos' }) && findPath({ compId: compId, termId: 'neg' }, groundNode)); break; } }); state.connections.forEach(conn => { const potential = getTerminalPotential(conn.from); const color = potential === 'positive' ? '#ff4136' : potential === 'negative' ? '#FFFFFF' : '#888'; conn.wireEl.setAttribute('stroke', color); }); }
+            
+            // --- INITIALIZATION ---
+            function initializeControls() {
+                document.querySelectorAll('.add-component').forEach(button => {
+                    button.addEventListener('click', () => createComponent(button.dataset.type));
+                });
+                
+                document.getElementById('reset-button').addEventListener('click', () => {
+                    if (confirm('Apakah Anda yakin ingin mereset seluruh papan kerja?')) {
+                        if (state.flasherState.intervalId) clearInterval(state.flasherState.intervalId);
+                        state.flasherState.intervalId = null;
+                        state.flasherState.isOn = false;
+                        
+                        hornSound.pause();
+                        hornSound.currentTime = 0;
+                        
+                        workbench.innerHTML = '<svg id="wire-canvas" style="fill:none;"></svg>';
+                        state.components = {};
+                        state.connections = [];
+                        state.componentCounter = 0;
+                        
+                        workbench = document.getElementById('workbench');
+                        wireCanvas = document.getElementById('wire-canvas');
+                        
+                        cancelDrawing();
+                        hideWireHandles();
+                    }
+                });
+            }
+
+            initializeControls();
+        });
+    </script>
+</body>
+
+</html>
